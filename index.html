@@ -350,8 +350,7 @@
     if (etat === 'connecte') { deconnecter(); connecter(); }   // on se reconnecte au nouveau serveur
   });
 
-  dessinerListe();
-  majServeur();
+  // Le premier affichage des listes se fait plus bas, une fois toutes les variables créées (chargerConfigs)
   majEcran();
 
   // ===== Étape 3 : importer des configurations (vmess, vless, trojan, ss) =====

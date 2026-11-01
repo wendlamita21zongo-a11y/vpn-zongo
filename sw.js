@@ -1,5 +1,5 @@
 // Service worker : garde les fichiers de ZONGO VPN en mémoire pour l’ouvrir sans connexion.
-const NOM = 'zongo-vpn-v1';   // après une modification des fichiers, change en 'zongo-vpn-v2' pour forcer la mise à jour
+const NOM = 'zongo-vpn-v2';   // après une modification des fichiers, change en 'zongo-vpn-v3' pour forcer la mise à jour
 const FICHIERS = ['./', 'index.html', 'manifest.json', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png'];
 
 self.addEventListener('install', function (event) {

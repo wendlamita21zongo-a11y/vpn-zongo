@@ -1,0 +1,889 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ZONGO VPN</title>
+<meta name="theme-color" content="#e8590c">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  :root {
+    --bg: #ffffff; --card: #fff3e6; --ink: #2b1a0a; --muted: #8a6a4a;
+    --accent: #e8590c; --on-accent: #ffffff;
+    color-scheme: light;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #1a1109; --card: #2a1c10; --ink: #fff4e8; --muted: #d1b79c; --accent: #ff8a1f; --on-accent: #1a1109;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #1a1109; --card: #2a1c10; --ink: #fff4e8; --muted: #d1b79c; --accent: #ff8a1f; --on-accent: #1a1109;
+    color-scheme: dark;
+  }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg); color: var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    padding: 20px 16px 32px;
+  }
+  .app { max-width: 420px; margin: 0 auto; }
+  header { display: flex; justify-content: space-between; align-items: center; }
+  h1 { font-size: 1.3rem; margin: 0; }
+  .demo { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.06em; border: 2px solid var(--accent); border-radius: 999px; padding: 3px 10px; }
+  .centre { text-align: center; }
+  #statut { font-size: 1.5rem; font-weight: 700; margin: 28px 0 20px; }
+  #bouton {
+    width: 180px; height: 180px; border-radius: 50%; cursor: pointer;
+    border: 8px solid var(--accent); background: var(--card); color: var(--ink);
+    font: inherit; font-size: 1.2rem; font-weight: 700;
+  }
+  #bouton.connecte { background: var(--accent); color: var(--on-accent); }
+  #bouton:disabled { opacity: 0.6; cursor: wait; }
+  #bouton:focus-visible, .ligne:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+  .carte { background: var(--card); border-radius: 16px; padding: 14px 16px; text-align: left; }
+  .etiquette { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.06em; color: var(--muted); }
+  .valeur { font-size: 1.1rem; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums; }
+  .sous { font-size: 0.85rem; color: var(--muted); margin-top: 2px; }
+  .grille { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+  h2 { font-size: 0.8rem; letter-spacing: 0.08em; color: var(--muted); margin: 28px 0 4px; }
+  .ligne {
+    display: flex; align-items: center; gap: 12px; width: 100%; margin-top: 10px;
+    background: var(--card); color: inherit; font: inherit; text-align: left; cursor: pointer;
+    border: 2px solid transparent; border-radius: 14px; padding: 12px 14px;
+  }
+  .ligne.actif { border-color: var(--accent); }
+  .drap { font-size: 1.7rem; line-height: 1; }
+  .nom { flex: 1; display: flex; flex-direction: column; }
+  .nom small { color: var(--muted); font-size: 0.82rem; }
+  .ping { font-size: 0.85rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .signal { display: inline-flex; align-items: flex-end; gap: 2px; height: 16px; }
+  .signal i { width: 4px; background: var(--muted); opacity: 0.35; border-radius: 1px; }
+  .signal i:nth-child(1) { height: 6px; }
+  .signal i:nth-child(2) { height: 11px; }
+  .signal i:nth-child(3) { height: 16px; }
+  .signal i.on { background: var(--accent); opacity: 1; }
+  .radio { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--accent); box-sizing: border-box; }
+  .ligne.actif .radio { background: radial-gradient(circle, var(--accent) 45%, transparent 50%); }
+  .note { color: var(--muted); font-size: 0.85rem; margin-top: 22px; text-align: center; }
+  textarea { width: 100%; box-sizing: border-box; font: inherit; font-size: 0.9rem; padding: 10px; border-radius: 10px; border: 2px solid var(--muted); background: var(--bg); color: var(--ink); resize: vertical; }
+  textarea:focus-visible { outline: 3px solid var(--accent); }
+  .boutons { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+  .petit { font: inherit; font-weight: 700; padding: 10px 16px; border-radius: 999px; border: 2px solid var(--accent); background: var(--accent); color: var(--on-accent); cursor: pointer; }
+  .petit.clair { background: transparent; color: var(--ink); }
+  #message { margin-top: 10px; word-break: break-word; }
+  .droite { display: flex; align-items: center; gap: 10px; }
+  .icone { font: inherit; font-size: 1.15rem; background: var(--card); color: var(--ink); border: 2px solid var(--accent); border-radius: 50%; width: 40px; height: 40px; cursor: pointer; padding: 0; }
+  #panneau { position: fixed; inset: 0; z-index: 20; background: var(--bg); overflow-y: auto; padding: calc(20px + env(safe-area-inset-top, 0px)) 16px 32px; }
+  #panneau[hidden] { display: none; }
+  .panneau-contenu { max-width: 420px; margin: 0 auto; }
+  .panneau-haut { display: flex; align-items: center; gap: 12px; }
+  .rang { display: flex; justify-content: space-between; align-items: center; gap: 12px; background: var(--card); border-radius: 14px; padding: 14px 16px; margin-top: 10px; }
+  .tag { font-size: 0.72rem; font-weight: 700; color: var(--muted); text-align: right; }
+  .rang small.tag { display: block; text-align: left; margin-top: 2px; }
+  .choix { display: inline-flex; border: 2px solid var(--accent); border-radius: 999px; overflow: hidden; }
+  .choix button { font: inherit; font-size: 0.85rem; border: 0; background: transparent; color: var(--ink); padding: 6px 12px; cursor: pointer; }
+  .choix button.sel { background: var(--accent); color: var(--on-accent); font-weight: 700; }
+  input[type=checkbox] { width: 22px; height: 22px; accent-color: var(--accent); }
+  .rangee { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+  .rangee .ligne { flex: 1; width: auto; margin-top: 0; }
+  .mini { flex: none; font: inherit; font-size: 1rem; width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--accent); background: var(--card); color: var(--ink); cursor: pointer; padding: 0; }
+  .mini.danger { width: auto; border-radius: 999px; padding: 0 12px; background: #c92a2a; border-color: #c92a2a; color: #fff; font-weight: 700; font-size: 0.85rem; }
+  #dialogue { position: fixed; inset: 0; z-index: 30; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; padding: 16px; }
+  #dialogue[hidden] { display: none; }
+  .boite { background: var(--bg); color: var(--ink); border-radius: 16px; padding: 18px; width: 100%; max-width: 420px; max-height: 90vh; overflow-y: auto; }
+  .champ { display: block; margin-top: 12px; font-size: 0.85rem; font-weight: 700; color: var(--muted); }
+  .champ input, .champ select { display: block; width: 100%; box-sizing: border-box; margin-top: 4px; font: inherit; font-size: 1rem; padding: 10px; border-radius: 10px; border: 2px solid var(--muted); background: var(--card); color: var(--ink); }
+[hidden] { display: none !important; }
+  .gauche { display: flex; align-items: center; gap: 10px; }
+  label.sous { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
+  #fond { position: fixed; inset: 0; z-index: 35; background: rgba(0, 0, 0, 0.4); }
+  #tiroir { position: fixed; top: 0; bottom: 0; left: 0; width: min(86vw, 340px); z-index: 40; box-sizing: border-box; display: flex; flex-direction: column; background: var(--card); box-shadow: 4px 0 24px rgba(0, 0, 0, 0.35); transform: translateX(-105%); transition: transform 0.25s; padding: calc(16px + env(safe-area-inset-top, 0px)) 14px 16px; }
+  #tiroir.ouvert { transform: none; }
+  #journalTexte { flex: 1; overflow-y: auto; margin-top: 10px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.78rem; line-height: 1.45; word-break: break-word; }
+  .niv-ERROR { color: #c92a2a; }
+  .niv-WARNING { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header>
+    <div class="gauche"><button id="btnJournal" class="icone" aria-label="Journal de connexion">📜</button><h1 id="nom">ZONGO VPN</h1></div>
+    <div class="droite"><span class="demo">DÉMO</span><button id="reglages" class="icone" aria-label="Paramètres">⚙️</button></div>
+  </header>
+
+  <div class="centre">
+    <div id="statut">Déconnecté</div>
+    <button id="bouton">Connecter</button>
+  </div>
+
+  <div class="carte" style="margin-top:22px">
+    <div class="etiquette">SERVEUR ACTIF</div>
+    <div class="valeur" id="serveurActif"></div>
+    <div class="sous">IP (démo) : <span id="ip">--</span></div>
+  </div>
+
+  <div class="grille">
+    <div class="carte"><div class="etiquette">DURÉE</div><div class="valeur" id="duree">00:00:00</div></div>
+    <div class="carte"><div class="etiquette">LATENCE</div><div class="valeur" id="latence">--</div></div>
+    <div class="carte"><div class="etiquette">REÇU</div><div class="valeur" id="recu">0 o</div></div>
+    <div class="carte"><div class="etiquette">ENVOYÉ</div><div class="valeur" id="envoye">0 o</div></div>
+  </div>
+
+  <h2>MES SERVEURS</h2>
+  <div id="liste"></div>
+  <div class="boutons"><button id="ajouter" class="petit">+ Ajouter un serveur</button></div>
+
+  <h2>IMPORTER UNE CONFIGURATION</h2>
+  <div class="carte">
+    <textarea id="lien" rows="3" placeholder="Colle ici un lien (vmess://, vless://, trojan://, ss://, ssh://) ou le texte d’un fichier WireGuard (.conf) ou OpenVPN (.ovpn)"></textarea>
+    <div class="boutons">
+      <button id="importer" class="petit">Importer</button>
+      <button id="effacer" class="petit clair">Effacer mes configurations</button>
+      <button id="btnFichier" class="petit clair">Importer un fichier</button>
+      <button id="btnColler" class="petit clair">Coller</button>
+      <button id="btnExportFichier" class="petit clair">Exporter en fichier</button>
+      <button id="btnCopier" class="petit clair">Copier</button>
+      <input type="file" id="fichier" accept=".json,.txt,.conf,.ovpn" hidden>
+    </div>
+    <label class="sous"><input type="checkbox" id="avecSecrets"> Inclure les mots de passe dans l’export</label>
+    <div id="message" class="sous" role="status"></div>
+  </div>
+
+  <p class="note">Démo : aucune connexion réelle n’est établie. Les chiffres sont simulés.</p>
+</div>
+
+<div id="panneau" hidden>
+  <div class="panneau-contenu">
+    <div class="panneau-haut">
+      <button id="retour" class="icone" aria-label="Retour">←</button>
+      <h1 style="font-size:1.2rem">Paramètres</h1>
+    </div>
+
+    <h2>EMPLACEMENTS DE DÉMONSTRATION</h2>
+    <p class="sous">Des serveurs fictifs pour tester l’interface. Touche-en un pour le choisir.</p>
+    <div id="listeDemo"></div>
+
+    <h2>GÉNÉRAL</h2>
+    <div class="rang"><span>Thème</span>
+      <span class="choix"><button data-theme="light">Clair</button><button data-theme="dark">Sombre</button><button data-theme="auto">Auto</button></span></div>
+    <label class="rang"><span>Reconnexion automatique<small class="tag">Nécessite le moteur</small></span><input type="checkbox" id="reco"></label>
+    <label class="rang"><span>Journalisation des événements<small class="tag">Actif (journal à gauche)</small></span><input type="checkbox" id="journal"></label>
+    <div class="rang"><span>Réinitialiser les paramètres</span><button id="reset" class="petit clair">Réinitialiser</button></div>
+
+    <h2>AUTRES CATÉGORIES</h2>
+    <div class="rang"><span>Protocoles et connexions</span><span class="tag">Lecture des configs : actif<br>Connexion : moteur</span></div>
+    <div class="rang"><span>Réseau (DNS, MTU, Kill Switch)</span><span class="tag">Moteur Android natif</span></div>
+    <div class="rang"><span>Avancé (SNI, Host, WebSocket, TLS)</span><span class="tag">Lecture : actif<br>Connexion : moteur</span></div>
+    <div class="rang"><span>Identifiant d’installation et appareils</span><span class="tag">Appli native + serveur</span></div>
+    <div class="rang"><span>Console et journaux</span><span class="tag">Appli native</span></div>
+    <div class="rang"><span>Serveur (comptes, quotas)</span><span class="tag">Ton propre serveur</span></div>
+    <div class="rang"><span>Sécurité</span><span class="tag">Appli native + serveur</span></div>
+    <div class="rang"><span>Développeur</span><span class="tag">Appli native</span></div>
+    <p class="note">Le thème, la journalisation et le choix des emplacements agissent déjà. Les autres réglages seront actifs avec le vrai moteur.</p>
+  </div>
+</div>
+
+<div id="fond" hidden></div>
+<aside id="tiroir" aria-label="Journal de connexion">
+  <div class="panneau-haut"><h1 style="font-size:1.1rem;flex:1">Journal de connexion</h1><button id="fermerJournal" class="icone" aria-label="Fermer">✕</button></div>
+  <div class="boutons"><button id="copierJournal" class="petit clair">Copier</button><button id="effacerJournal" class="petit clair">Effacer</button></div>
+  <div id="journalTexte" role="log"></div>
+</aside>
+
+<div id="dialogue" hidden>
+  <div class="boite">
+    <h2 id="dlgTitre" style="margin-top:0">Serveur</h2>
+    <label class="champ">Nom<input id="fNom" maxlength="40" autocomplete="off"></label>
+    <label class="champ">Protocole<select id="fProto"></select></label>
+    <label class="champ">Serveur<input id="fHote" placeholder="serveur.exemple" autocapitalize="off" autocomplete="off"></label>
+    <label class="champ">Port<input id="fPort" inputmode="numeric" autocomplete="off"></label>
+    <label class="champ">Identifiant ou mot de passe<input id="fSecret" type="password" autocomplete="off" placeholder="vide = garder l’actuel"></label>
+    <div id="dlgMessage" class="sous" role="alert"></div>
+    <div class="boutons"><button id="dlgOk" class="petit">Enregistrer</button><button id="dlgAnnuler" class="petit clair">Annuler</button></div>
+  </div>
+</div>
+
+<script>
+  const NOM_APPLI = 'ZONGO VPN';
+  document.getElementById('nom').textContent = NOM_APPLI;
+  document.title = NOM_APPLI;
+
+  // Un « tableau » (liste) de serveurs. Chaque serveur est un « objet » avec ses informations.
+  // Ce sont des serveurs de démonstration : ils n’existent pas vraiment.
+  const serveurs = [
+    { pays: 'Côte d’Ivoire', ville: 'Abidjan',      drapeau: '🇨🇮', ping: 60 },
+    { pays: 'France',        ville: 'Paris',        drapeau: '🇫🇷', ping: 95 },
+    { pays: 'Pays-Bas',      ville: 'Amsterdam',    drapeau: '🇳🇱', ping: 110 },
+    { pays: 'Afrique du Sud', ville: 'Johannesburg', drapeau: '🇿🇦', ping: 140 },
+    { pays: 'États-Unis',    ville: 'New York',     drapeau: '🇺🇸', ping: 190 }
+  ];
+
+  const bouton = document.getElementById('bouton');
+  const statut = document.getElementById('statut');
+  const elDuree = document.getElementById('duree');
+  const elRecu = document.getElementById('recu');
+  const elEnvoye = document.getElementById('envoye');
+  const elLatence = document.getElementById('latence');
+  const elIp = document.getElementById('ip');
+  const elServeur = document.getElementById('serveurActif');
+  const liste = document.getElementById('liste');
+
+  let etat = 'deconnecte';   // 'deconnecte', 'connexion' ou 'connecte'
+  let indexActif = 0;        // le numéro du serveur choisi (0 = le premier de la liste)
+  let secondes = 0, recu = 0, envoye = 0, minuteur;
+
+  // 6200 octets devient « 6.1 Ko », 3000000 devient « 2.86 Mo »
+  function formatOctets(n) {
+    if (n < 1024) { return n + ' o'; }
+    if (n < 1048576) { return (n / 1024).toFixed(1) + ' Ko'; }
+    return (n / 1048576).toFixed(2) + ' Mo';
+  }
+
+  function afficherDuree() {
+    const h = Math.floor(secondes / 3600);
+    const m = Math.floor((secondes % 3600) / 60);
+    const s = secondes % 60;
+    elDuree.textContent = [h, m, s].map(function (n) { return String(n).padStart(2, '0'); }).join(':');
+  }
+
+  function afficherCompteurs() {
+    elRecu.textContent = formatOctets(recu);
+    elEnvoye.textContent = formatOctets(envoye);
+    if (etat === 'connecte') {
+      // la latence varie un peu autour du ping du serveur (effet réaliste)
+      elLatence.textContent = ((serveurs[indexActif].ping || 100) + Math.floor(Math.random() * 13) - 6) + ' ms';
+      elIp.textContent = '10.0.0.2';
+    } else {
+      elLatence.textContent = '--';
+      elIp.textContent = '--';
+    }
+  }
+
+  function majEcran() {
+    if (etat === 'deconnecte') {
+      statut.textContent = 'Déconnecté'; bouton.textContent = 'Connecter';
+      bouton.className = ''; bouton.disabled = false;
+    } else if (etat === 'connexion') {
+      statut.textContent = 'Connexion…'; bouton.textContent = '…'; bouton.disabled = true;
+    } else {
+      statut.textContent = 'Connecté'; bouton.textContent = 'Déconnecter';
+      bouton.className = 'connecte'; bouton.disabled = false;
+    }
+    afficherCompteurs();
+  }
+
+  function majServeur() {
+    const s = serveurs[indexActif];
+    elServeur.textContent = s.drapeau + ' ' + s.pays + ' – ' + s.ville;
+  }
+
+  // Trois petites barres de signal : plus le ping est bas, plus il y en a
+  function barres(ping) {
+    if (ping === null) { return ''; }
+    const n = ping < 80 ? 3 : ping < 150 ? 2 : 1;
+    let html = '';
+    for (let k = 1; k <= 3; k++) { html += '<i class="' + (k <= n ? 'on' : '') + '"></i>'; }
+    return '<span class="signal">' + html + '</span>';
+  }
+
+  // map() transforme chaque serveur de la liste en une ligne HTML
+  function dessinerListeAncien() {
+    liste.innerHTML = serveurs.map(function (s, i) {
+      return '<button class="ligne' + (i === indexActif ? ' actif' : '') + '" data-i="' + i + '">' +
+        '<span class="drap">' + s.drapeau + '</span>' +
+        '<span class="nom"><b>' + esc(s.pays) + '</b><small>' + esc(s.ville) + '</small></span>' +
+        '<span class="ping">' + (s.ping === null ? esc(s.proto) : s.ping + ' ms') + '</span>' + barres(s.ping) +
+        '<span class="radio"></span></button>';
+    }).join('');
+  }
+
+  function connecter() {
+    etat = 'connexion';
+    journal('INFO', 'Démo : connexion simulée vers ' + serveurs[indexActif].pays + ' (' + serveurs[indexActif].ville + ')');
+    majEcran();
+    setTimeout(function () {
+      etat = 'connecte';
+      secondes = 0; recu = 0; envoye = 0;
+      afficherDuree();
+      majEcran();
+      // Chaque seconde : le temps avance et on « simule » des données qui passent
+      journal('INFO', 'Démo : statut Connecté, mais aucun vrai tunnel n’est établi');
+      minuteur = setInterval(function () {
+        secondes = secondes + 1;
+        recu = recu + Math.floor(Math.random() * 150000) + 20000;
+        envoye = envoye + Math.floor(Math.random() * 30000) + 2000;
+        afficherDuree();
+        afficherCompteurs();
+      }, 1000);
+    }, 1500);
+  }
+
+  function deconnecter() {
+    if (etat === 'connecte') { journal('INFO', 'Démo : déconnexion'); }
+    clearInterval(minuteur);
+    etat = 'deconnecte';
+    secondes = 0; recu = 0; envoye = 0;
+    afficherDuree();
+    majEcran();
+  }
+
+  bouton.addEventListener('click', function () {
+    if (etat === 'deconnecte') { connecter(); }
+    else if (etat === 'connecte') { deconnecter(); }
+  });
+
+  // Un toucher sur une ligne de la liste : on choisit ce serveur
+  liste.addEventListener('click', function (e) {
+    const ligne = e.target.closest('.ligne');
+    if (!ligne || etat === 'connexion') { return; }
+    indexActif = Number(ligne.dataset.i);   // data-i contient le numéro de la ligne
+    dessinerListe();
+    majServeur();
+    if (etat === 'connecte') { deconnecter(); connecter(); }   // on se reconnecte au nouveau serveur
+  });
+
+  dessinerListe();
+  majServeur();
+  majEcran();
+
+  // ===== Étape 3 : importer des configurations (vmess, vless, trojan, ss) =====
+  const CLE = 'zongo-configs';
+  const elLien = document.getElementById('lien');
+  const elMessage = document.getElementById('message');
+  let liens = [];   // les liens importés, gardés dans le navigateur
+
+  // Protège un texte avant de l’afficher dans la page
+  function esc(t) {
+    return String(t).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  // Les liens vmess:// et ss:// contiennent du texte codé en « base64 » : on le décode
+  function decoderBase64(texte) {
+    let b = texte.replace(/-/g, '+').replace(/_/g, '/');
+    while (b.length % 4) { b += '='; }
+    const octets = Uint8Array.from(atob(b), function (c) { return c.charCodeAt(0); });
+    return new TextDecoder().decode(octets);
+  }
+
+  // vmess://  suivi d’un JSON codé en base64
+  function lireVmess(lien) {
+    const o = JSON.parse(decoderBase64(lien.slice(8)));
+    return { proto: 'VMess', nom: o.ps || o.add, hote: o.add, port: Number(o.port), secret: o.id,
+      reseau: o.net || 'tcp', securite: o.tls || 'aucune', sni: o.sni || o.host || '', chemin: o.path || '' };
+  }
+
+  // vless://identifiant@serveur:port?options#nom   et   trojan://motdepasse@serveur:port?options#nom
+  function lireUrl(lien, proto) {
+    const u = new URL(lien);
+    const p = u.searchParams;
+    return { proto: proto === 'vless' ? 'VLESS' : 'Trojan',
+      nom: decodeURIComponent(u.hash.slice(1)) || u.hostname,
+      hote: u.hostname, port: Number(u.port), secret: decodeURIComponent(u.username),
+      reseau: p.get('type') || 'tcp', securite: p.get('security') || (proto === 'trojan' ? 'tls' : 'aucune'),
+      sni: p.get('sni') || p.get('host') || '', chemin: p.get('path') || '' };
+  }
+
+  // ss://methode:motdepasse@serveur:port#nom   (la partie méthode:motdepasse peut être en base64)
+  function lireShadowsocks(lien) {
+    let reste = lien.slice(5);
+    let nom = '';
+    const d = reste.indexOf('#');
+    if (d >= 0) { nom = decodeURIComponent(reste.slice(d + 1)); reste = reste.slice(0, d); }
+    const q = reste.indexOf('?');
+    if (q >= 0) { reste = reste.slice(0, q); }
+    let infos;
+    if (reste.indexOf('@') >= 0) {
+      const a = reste.lastIndexOf('@');
+      let utilisateur = reste.slice(0, a);
+      try {
+        const t = decoderBase64(utilisateur);
+        if (t.indexOf(':') >= 0) { utilisateur = t; }
+      } catch (e) { utilisateur = decodeURIComponent(utilisateur); }
+      infos = utilisateur + reste.slice(a);
+    } else {
+      infos = decoderBase64(reste);
+    }
+    const a2 = infos.lastIndexOf('@');
+    const identifiants = infos.slice(0, a2);
+    const serveur = infos.slice(a2 + 1);
+    const c = serveur.lastIndexOf(':');
+    const m = identifiants.indexOf(':');
+    if (a2 < 0 || c < 0 || m < 0) { throw new Error('Le lien Shadowsocks est incomplet'); }
+    const hote = serveur.slice(0, c).replace(/^\[|\]$/g, '');
+    return { proto: 'Shadowsocks', nom: nom || hote, hote: hote, port: Number(serveur.slice(c + 1)),
+      secret: identifiants.slice(m + 1), reseau: 'tcp', securite: identifiants.slice(0, m), sni: '', chemin: '' };
+  }
+
+  // ssh://utilisateur:motdepasse@serveur:port?options#nom
+  // options : type=ws (WebSocket), path=, host=, security=tls, sni=, et ns= / key= (SlowDNS)
+  function lireSsh(lien) {
+    const u = new URL(lien);
+    const p = u.searchParams;
+    let type = 'SSH direct';
+    if (p.get('type') === 'ws') { type = 'SSH WebSocket'; }
+    else if (p.get('ns') || p.get('key')) { type = 'SSH SlowDNS'; }
+    return { proto: type, nom: decodeURIComponent(u.hash.slice(1)) || u.hostname,
+      hote: u.hostname, port: Number(u.port || 22), secret: decodeURIComponent(u.password),
+      reseau: type === 'SSH WebSocket' ? 'ws' : (type === 'SSH SlowDNS' ? 'dns' : 'tcp'),
+      securite: p.get('security') || 'aucune', sni: p.get('sni') || p.get('host') || '', chemin: p.get('path') || '',
+      utilisateur: decodeURIComponent(u.username), ns: p.get('ns') || '' };
+  }
+
+  // Forme courte très répandue : serveur:port@utilisateur:motdepasse
+  function lireSshSimple(texte) {
+    const a = texte.indexOf('@');
+    const hp = texte.slice(0, a);
+    const up = texte.slice(a + 1);
+    const c1 = hp.lastIndexOf(':');
+    const c2 = up.indexOf(':');
+    return lireSsh('ssh://' + encodeURIComponent(up.slice(0, c2)) + ':' + encodeURIComponent(up.slice(c2 + 1)) +
+      '@' + hp.slice(0, c1) + ':' + hp.slice(c1 + 1));
+  }
+
+  // Fichier WireGuard (.conf) : des lignes « clé = valeur »
+  function lireWireGuard(texte) {
+    const v = {};
+    texte.split(/\r?\n/).forEach(function (ligne) {
+      const i = ligne.indexOf('=');
+      if (i > 0 && ligne.trim()[0] !== '#') { v[ligne.slice(0, i).trim().toLowerCase()] = ligne.slice(i + 1).trim(); }
+    });
+    const ep = v.endpoint || '';
+    const c = ep.lastIndexOf(':');
+    if (c < 0 || !v.privatekey || !v.publickey) { throw new Error('Le fichier WireGuard est incomplet (Endpoint, PrivateKey, PublicKey)'); }
+    const hote = ep.slice(0, c).replace(/^\[|\]$/g, '');
+    return { proto: 'WireGuard', nom: hote, hote: hote, port: Number(ep.slice(c + 1)), secret: v.privatekey,
+      reseau: 'udp', securite: 'clé publique ' + v.publickey.slice(0, 6) + '…', sni: '', chemin: '' };
+  }
+
+  // Fichier OpenVPN (.ovpn) : on cherche la ligne « remote serveur port »
+  function lireOpenVpn(texte) {
+    const r = texte.match(/^\s*remote\s+(\S+)\s+(\d+)/m);
+    if (!r) { throw new Error('Aucune ligne remote trouvée dans le fichier OpenVPN'); }
+    const p = texte.match(/^\s*proto\s+(\S+)/m);
+    return { proto: 'OpenVPN', nom: r[1], hote: r[1], port: Number(r[2]), secret: '',
+      reseau: p ? p[1] : 'udp', securite: 'certificat', sni: '', chemin: '' };
+  }
+
+  // On vérifie que l’essentiel est présent
+  function verifier(c) {
+    if (!c.hote || (!c.secret && c.proto !== 'OpenVPN')) { throw new Error('Il manque le serveur ou l’identifiant'); }
+    if (!(c.port >= 1 && c.port <= 65535)) { throw new Error('Le port est invalide'); }
+    return c;
+  }
+
+  // On regarde le début du lien pour savoir quel lecteur utiliser
+  function lireLien(texte) {
+    const lien = texte.trim();
+    if (lien.indexOf('[Interface]') >= 0) { return verifier(lireWireGuard(lien)); }
+    if (/^\s*remote\s+\S+\s+\d+/m.test(lien)) { return verifier(lireOpenVpn(lien)); }
+    const proto = lien.split('://')[0].toLowerCase();
+    if (proto === 'vmess') { return verifier(lireVmess(lien)); }
+    if (proto === 'vless' || proto === 'trojan') { return verifier(lireUrl(lien, proto)); }
+    if (proto === 'ss') { return verifier(lireShadowsocks(lien)); }
+    if (proto === 'ssh') { return verifier(lireSsh(lien)); }
+    if (/^[^\s@:]+:\d+@[^\s:]+:\S+$/.test(lien)) { return verifier(lireSshSimple(lien)); }
+    throw new Error('Format non reconnu : utilise un lien vmess://, vless://, trojan://, ss://, ssh:// ou un fichier WireGuard / OpenVPN');
+  }
+
+  function resume(c) {
+    return c.proto + ' · ' + c.hote + ':' + c.port + ' · réseau ' + c.reseau + ' · sécurité ' + c.securite +
+      (c.sni ? ' · SNI ' + c.sni : '') + (c.chemin ? ' · chemin ' + c.chemin : '') +
+      (c.utilisateur ? ' · utilisateur ' + c.utilisateur : '') + (c.ns ? ' · NS ' + c.ns : '');
+  }
+
+  // On ajoute la configuration à la liste des emplacements (sans afficher l’identifiant secret)
+  function ajouterConfig(c, lien) {
+    serveurs.push({ pays: c.nom, ville: c.hote + ':' + c.port, drapeau: '⚙️', ping: null, proto: c.proto, lien: lien || 'manuel', c: c });
+  }
+
+  function sauvegarder() {
+    try { localStorage.setItem('zongo-profils', JSON.stringify(serveurs.filter(function (s) { return s.c; }).map(function (s) { return s.c; }))); } catch (e) { }
+  }
+
+  function chargerConfigsAncien() {
+    try {
+      JSON.parse(localStorage.getItem(CLE) || '[]').forEach(function (lien) {
+        try { ajouterConfig(lireLien(lien), lien); liens.push(lien); } catch (e) { }
+      });
+    } catch (e) { }
+    dessinerListe();
+  }
+
+  document.getElementById('importer').addEventListener('click', function () {
+    try {
+      const lien = elLien.value.trim();
+      const r = importerTexte(lien);
+      const c = r.ok[r.ok.length - 1];
+      ajouterConfig(c, lien);
+      liens.push(lien);
+      sauvegarder();
+      elMessage.textContent = r.ok.length + ' serveur(s) importé(s)' + (r.echecs.length ? ', ' + r.echecs.length + ' ligne(s) refusée(s)' : '') + '. Dernier : ' + c.nom + ' — ' + resume(c);
+      elLien.value = '';
+      dessinerListe();
+    } catch (err) {
+      // Nos messages sont de type « Error » ; les autres erreurs (base64, JSON...) deviennent un message simple
+      elMessage.textContent = 'Échec : ' + (err.name === 'Error' ? err.message : 'le lien est illisible ou incomplet') + '.';
+    }
+  });
+
+  document.getElementById('effacer').addEventListener('click', function () {
+    if (etat === 'connecte') { deconnecter(); }
+    for (let i = serveurs.length - 1; i >= 0; i--) { if (serveurs[i].lien) { serveurs.splice(i, 1); } }
+    liens = [];
+    sauvegarder();
+    indexActif = 0;
+    majServeur();
+    dessinerListe();
+    elMessage.textContent = 'Tes configurations ont été effacées.';
+  });
+
+  // ===== Paramètres =====
+  const CLE_REGLAGES = 'zongo-reglages';
+  let reglages = { theme: 'auto', reconnexion: false, journal: true };
+  try { Object.assign(reglages, JSON.parse(localStorage.getItem(CLE_REGLAGES) || '{}')); } catch (e) { }
+  const panneau = document.getElementById('panneau');
+  const caseReco = document.getElementById('reco');
+  const caseJournal = document.getElementById('journal');
+
+  function enregistrerReglages() {
+    try { localStorage.setItem(CLE_REGLAGES, JSON.stringify(reglages)); } catch (e) { }
+  }
+
+  // Clair / sombre : on pose (ou on retire) l’attribut data-theme sur la page, le CSS fait le reste
+  function appliquerTheme() {
+    const racine = document.documentElement;
+    if (reglages.theme === 'auto') { racine.removeAttribute('data-theme'); }
+    else { racine.setAttribute('data-theme', reglages.theme); }
+    document.querySelectorAll('.choix button').forEach(function (b) {
+      b.classList.toggle('sel', b.dataset.theme === reglages.theme);
+    });
+  }
+
+  document.querySelectorAll('.choix button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      reglages.theme = b.dataset.theme;
+      enregistrerReglages();
+      appliquerTheme();
+    });
+  });
+  caseReco.checked = reglages.reconnexion;
+  caseJournal.checked = reglages.journal;
+  caseReco.addEventListener('change', function () { reglages.reconnexion = caseReco.checked; enregistrerReglages(); });
+  caseJournal.addEventListener('change', function () { reglages.journal = caseJournal.checked; enregistrerReglages(); });
+  document.getElementById('reset').addEventListener('click', function () {
+    reglages = { theme: 'auto', reconnexion: false, journal: true };
+    enregistrerReglages();
+    caseReco.checked = false;
+    caseJournal.checked = true;
+    appliquerTheme();
+  });
+  document.getElementById('reglages').addEventListener('click', function () { panneau.hidden = false; });
+  document.getElementById('retour').addEventListener('click', function () { panneau.hidden = true; });
+  appliquerTheme();
+
+  // ===== Étape 4 : serveurs importés sur l’accueil, démos dans les paramètres, modifier et ajouter =====
+  const listeDemo = document.getElementById('listeDemo');
+  const dialogue = document.getElementById('dialogue');
+  const fNom = document.getElementById('fNom');
+  const fProto = document.getElementById('fProto');
+  const fHote = document.getElementById('fHote');
+  const fPort = document.getElementById('fPort');
+  const fSecret = document.getElementById('fSecret');
+  const dlgMessage = document.getElementById('dlgMessage');
+  let enEdition = -1;     // numéro du serveur modifié, ou -1 pour un nouveau serveur
+  let supprAttente = -1;  // serveur en attente de confirmation de suppression
+
+  // Une ligne = le bouton de choix + (pour un serveur importé) les boutons modifier et supprimer
+  function ligneHtml(s, i) {
+    let actions = '';
+    if (s.c) {
+      actions = '<button class="mini" data-act="edit" data-i="' + i + '" aria-label="Modifier">✏️</button>' +
+        '<button class="mini' + (i === supprAttente ? ' danger' : '') + '" data-act="del" data-i="' + i + '" aria-label="Supprimer">' +
+        (i === supprAttente ? 'Confirmer' : '🗑️') + '</button>';
+    }
+    return '<div class="rangee"><button class="ligne' + (i === indexActif ? ' actif' : '') + '" data-i="' + i + '">' +
+      '<span class="drap">' + s.drapeau + '</span>' +
+      '<span class="nom"><b>' + esc(s.pays) + '</b><small>' + esc(s.ville) + '</small></span>' +
+      '<span class="ping">' + (s.ping === null ? esc(s.proto) : s.ping + ' ms') + '</span>' + barres(s.ping) +
+      '<span class="radio"></span></button>' + actions + '</div>';
+  }
+
+  // Accueil : seulement les serveurs importés ou ajoutés. Paramètres : les emplacements de démonstration.
+  function dessinerListe() {
+    const perso = [];
+    const demo = [];
+    serveurs.forEach(function (s, i) { (s.c ? perso : demo).push(ligneHtml(s, i)); });
+    liste.innerHTML = perso.length ? perso.join('') :
+      '<p class="sous">Aucun serveur pour l’instant. Importe une configuration ci-dessous ou ajoute un serveur.</p>';
+    listeDemo.innerHTML = demo.join('');
+  }
+
+  function choisirServeur(i) {
+    indexActif = i;
+    dessinerListe();
+    majServeur();
+    if (etat === 'connecte') { deconnecter(); connecter(); }
+  }
+
+  listeDemo.addEventListener('click', function (e) {
+    const l = e.target.closest('.ligne');
+    if (!l || etat === 'connexion') { return; }
+    choisirServeur(Number(l.dataset.i));
+  });
+
+  function supprimerServeur(i) {
+    if (etat === 'connecte' && i === indexActif) { deconnecter(); }
+    serveurs.splice(i, 1);
+    if (i === indexActif) { indexActif = 0; } else if (i < indexActif) { indexActif = indexActif - 1; }
+    supprAttente = -1;
+    sauvegarder();
+    majServeur();
+    dessinerListe();
+  }
+
+  // Boutons modifier / supprimer (la suppression demande une confirmation : deux touchers)
+  liste.addEventListener('click', function (e) {
+    const b = e.target.closest('.mini');
+    if (!b) { return; }
+    const i = Number(b.dataset.i);
+    if (b.dataset.act === 'edit') { supprAttente = -1; ouvrirDialogue(i); }
+    else if (supprAttente === i) { supprimerServeur(i); }
+    else { supprAttente = i; dessinerListe(); }
+  });
+
+  function ouvrirDialogue(i) {
+    enEdition = i;
+    dlgMessage.textContent = '';
+    fSecret.value = '';
+    if (i >= 0) {
+      const c = serveurs[i].c;
+      document.getElementById('dlgTitre').textContent = 'Modifier le serveur';
+      fProto.innerHTML = '<option>' + esc(c.proto) + '</option>';
+      fProto.disabled = true;
+      fNom.value = c.nom;
+      fHote.value = c.hote;
+      fPort.value = c.port;
+    } else {
+      document.getElementById('dlgTitre').textContent = 'Ajouter un serveur';
+      fProto.innerHTML = ['VLESS', 'VMess', 'Trojan', 'Shadowsocks', 'SSH direct'].map(function (p) { return '<option>' + p + '</option>'; }).join('');
+      fProto.disabled = false;
+      fNom.value = '';
+      fHote.value = '';
+      fPort.value = '';
+    }
+    dialogue.hidden = false;
+  }
+
+  document.getElementById('ajouter').addEventListener('click', function () { ouvrirDialogue(-1); });
+  document.getElementById('dlgAnnuler').addEventListener('click', function () { dialogue.hidden = true; });
+
+  document.getElementById('dlgOk').addEventListener('click', function () {
+    const nom = fNom.value.trim();
+    const hote = fHote.value.trim();
+    const port = Number(fPort.value);
+    const secret = fSecret.value;
+    if (nom.length < 1 || nom.length > 40) { dlgMessage.textContent = 'Le nom doit faire entre 1 et 40 caractères.'; return; }
+    if (!/^[A-Za-z0-9.-]+$/.test(hote) && !/^[0-9a-fA-F:]+$/.test(hote)) { dlgMessage.textContent = 'Serveur invalide : lettres, chiffres, points et tirets seulement.'; return; }
+    if (!(port >= 1 && port <= 65535)) { dlgMessage.textContent = 'Le port doit être entre 1 et 65535.'; return; }
+    if (enEdition < 0 && !secret) { dlgMessage.textContent = 'Il faut un identifiant ou un mot de passe.'; return; }
+    if (enEdition >= 0) {
+      const s = serveurs[enEdition];
+      s.c.nom = nom;
+      s.c.hote = hote;
+      s.c.port = port;
+      if (secret) { s.c.secret = secret; }
+      s.pays = nom;
+      s.ville = hote + ':' + port;
+    } else {
+      ajouterConfig({ proto: fProto.value, nom: nom, hote: hote, port: port, secret: secret, reseau: 'tcp', securite: 'aucune', sni: '', chemin: '' }, 'manuel');
+    }
+    sauvegarder();
+    dialogue.hidden = true;
+    dessinerListe();
+    majServeur();
+  });
+
+  // Au démarrage : on reprend les serveurs enregistrés (et on convertit les anciens liens une seule fois)
+  function chargerConfigs() {
+    try {
+      let ancien = false;
+      JSON.parse(localStorage.getItem(CLE) || '[]').forEach(function (lien) {
+        ancien = true;
+        try { ajouterConfig(lireLien(lien), lien); } catch (e) { }
+      });
+      JSON.parse(localStorage.getItem('zongo-profils') || '[]').forEach(function (c) { ajouterConfig(c, 'manuel'); });
+      if (ancien) { localStorage.removeItem(CLE); sauvegarder(); }
+    } catch (e) { }
+    const premier = serveurs.findIndex(function (s) { return s.c; });
+    if (premier >= 0) { indexActif = premier; }
+    majServeur();
+    dessinerListe();
+  }
+
+  chargerConfigs();
+
+  // ===== Étape 5 : import et export (fichier, presse-papiers), journal de connexion =====
+  const zoneJournal = document.getElementById('journalTexte');
+  const tiroir = document.getElementById('tiroir');
+  const fond = document.getElementById('fond');
+  const lignesJournal = [];
+  tiroir.inert = true;
+
+  function messageErreur(err) { return err && err.name === 'Error' ? err.message : 'contenu illisible ou incomplet'; }
+
+  // --- Journal de connexion (tiroir à gauche). On n’y écrit jamais de mot de passe ---
+  function journal(niveau, message) {
+    if (!reglages.journal) { return; }
+    lignesJournal.push({ h: new Date().toLocaleTimeString('fr-FR'), niveau: niveau, message: message });
+    if (lignesJournal.length > 300) { lignesJournal.shift(); }
+    afficherJournal();
+  }
+  function afficherJournal() {
+    zoneJournal.innerHTML = lignesJournal.map(function (l) {
+      return '<div class="niv-' + l.niveau + '">[' + l.h + '] ' + l.niveau + ' ' + esc(l.message) + '</div>';
+    }).join('');
+    zoneJournal.scrollTop = zoneJournal.scrollHeight;
+  }
+  function ouvrirJournal(ouvert) {
+    tiroir.classList.toggle('ouvert', ouvert);
+    tiroir.inert = !ouvert;
+    fond.hidden = !ouvert;
+  }
+  document.getElementById('btnJournal').addEventListener('click', function () { ouvrirJournal(true); });
+  document.getElementById('fermerJournal').addEventListener('click', function () { ouvrirJournal(false); });
+  fond.addEventListener('click', function () { ouvrirJournal(false); });
+  document.getElementById('effacerJournal').addEventListener('click', function () { lignesJournal.length = 0; afficherJournal(); });
+  document.getElementById('copierJournal').addEventListener('click', function () {
+    const texte = lignesJournal.map(function (l) { return '[' + l.h + '] ' + l.niveau + ' ' + l.message; }).join('\n');
+    navigator.clipboard.writeText(texte).catch(function () { journal('WARNING', 'Copie automatique impossible ici : sélectionne le texte du journal.'); });
+  });
+
+  // --- Import : liens (un par ligne), fichier WireGuard ou OpenVPN, ou export ZONGO (JSON) ---
+  function normaliser(c) {
+    const o = {};
+    ['proto', 'nom', 'hote', 'secret', 'reseau', 'securite', 'sni', 'chemin', 'utilisateur', 'ns'].forEach(function (k) { o[k] = String(c[k] || '').trim(); });
+    o.port = Number(c.port);
+    o.nom = o.nom || o.hote;
+    if (!o.proto) { o.proto = 'VLESS'; }
+    if (!o.hote) { throw new Error('Il manque le serveur'); }
+    if (!(o.port >= 1 && o.port <= 65535)) { throw new Error('Le port est invalide'); }
+    return o;
+  }
+
+  function importerTexte(texte) {
+    const t = texte.trim();
+    const ok = [];
+    const echecs = [];
+    function essayer(f) { try { ok.push(f()); } catch (e) { echecs.push(e); } }
+    if (t.indexOf('[Interface]') >= 0 || /^\s*remote\s+\S+\s+\d+/m.test(t)) {
+      essayer(function () { return lireLien(t); });
+    } else if (t[0] === '[' || t[0] === '{') {
+      let o = JSON.parse(t);
+      if (!Array.isArray(o)) { o = o.configs || [o]; }
+      o.forEach(function (c) { essayer(function () { return normaliser(c); }); });
+    } else {
+      t.split(/\r?\n/).forEach(function (l) { if (l.trim()) { essayer(function () { return lireLien(l); }); } });
+    }
+    if (!ok.length) { throw echecs[0] || new Error('Rien à importer'); }
+    ok.forEach(function (c) { ajouterConfig(c, 'import'); });
+    indexActif = serveurs.length - 1;
+    sauvegarder();
+    dessinerListe();
+    majServeur();
+    journal('INFO', 'Import : ' + ok.length + ' serveur(s)' + (echecs.length ? ', ' + echecs.length + ' refusé(s)' : ''));
+    return { ok: ok, echecs: echecs };
+  }
+
+  function messageImport(r, source) {
+    return r.ok.length + ' serveur(s) importé(s) ' + source + (r.echecs.length ? ', ' + r.echecs.length + ' refusé(s)' : '') + '.';
+  }
+
+  document.getElementById('btnFichier').addEventListener('click', function () { document.getElementById('fichier').click(); });
+  document.getElementById('fichier').addEventListener('change', async function (e) {
+    const f = e.target.files[0];
+    e.target.value = '';
+    if (!f) { return; }
+    try { elMessage.textContent = messageImport(importerTexte(await f.text()), 'depuis ' + f.name); }
+    catch (err) { elMessage.textContent = 'Échec : ' + messageErreur(err) + '.'; journal('ERROR', 'Import de fichier refusé'); }
+  });
+  document.getElementById('btnColler').addEventListener('click', async function () {
+    try { elMessage.textContent = messageImport(importerTexte(await navigator.clipboard.readText()), 'depuis le presse-papiers'); }
+    catch (err) {
+      elMessage.textContent = (err && (err.name === 'NotAllowedError' || err.name === 'SecurityError'))
+        ? 'Le presse-papiers n’est pas accessible ici : colle le texte dans la case (appui long), puis touche Importer.'
+        : 'Échec : ' + messageErreur(err) + '.';
+    }
+  });
+
+  // --- Export : format ZONGO (JSON), en fichier ou dans le presse-papiers ---
+  function aDesServeurs() { return serveurs.some(function (s) { return s.c; }); }
+  function exporterJson() {
+    const avec = document.getElementById('avecSecrets').checked;
+    const configs = serveurs.filter(function (s) { return s.c; }).map(function (s) {
+      const c = Object.assign({}, s.c);
+      if (!avec) { c.secret = ''; }
+      return c;
+    });
+    return JSON.stringify({ zongo: 1, configs: configs }, null, 2);
+  }
+
+  // Dans claude.ai la sauvegarde passe par la capacité « downloads » ; sur ton propre hébergement c’est un téléchargement classique
+  async function enregistrerFichier(nom, texte) {
+    let dl = null;
+    try { dl = (window.claude && window.claude.use) ? await window.claude.use('downloads') : null; } catch (e) { dl = null; }
+    if (dl) { await dl.save({ filename: nom, data: texte }); return; }
+    const url = URL.createObjectURL(new Blob([texte], { type: 'application/json' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = nom;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+
+  document.getElementById('btnExportFichier').addEventListener('click', async function () {
+    if (!aDesServeurs()) { elMessage.textContent = 'Aucun serveur à exporter.'; return; }
+    try {
+      await enregistrerFichier('zongo-serveurs.json', exporterJson());
+      elMessage.textContent = 'Export prêt.' + (document.getElementById('avecSecrets').checked ? ' Attention : le fichier contient tes mots de passe.' : '');
+      journal('INFO', 'Export en fichier');
+    } catch (err) {
+      elMessage.textContent = (err && err.code === 'declined') ? 'Enregistrement annulé.' : 'Impossible d’enregistrer le fichier ici.';
+    }
+  });
+  document.getElementById('btnCopier').addEventListener('click', async function () {
+    if (!aDesServeurs()) { elMessage.textContent = 'Aucun serveur à copier.'; return; }
+    const texte = exporterJson();
+    try {
+      await navigator.clipboard.writeText(texte);
+      elMessage.textContent = 'Copié dans le presse-papiers.' + (document.getElementById('avecSecrets').checked ? ' Attention : il contient tes mots de passe.' : '');
+      journal('INFO', 'Export dans le presse-papiers');
+    } catch (err) {
+      elLien.value = texte;
+      elLien.select();
+      elMessage.textContent = 'Copie automatique impossible ici : le texte est dans la case ci-dessus, sélectionne-le et copie-le.';
+    }
+  });
+</script>
+
+<script>
+  // Mode hors-ligne : on enregistre le service worker (fichier sw.js)
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('sw.js').catch(function () { });
+    });
+  }
+</script>
+</body>
+</html>
